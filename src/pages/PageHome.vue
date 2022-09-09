@@ -1,40 +1,99 @@
 <template>
   <div id="app">
-    <img alt="Vue logo" src="../assets/logo.png" />
-    <TarefaList :msg="'Welcome to Your Vue.js App'" :tasks="listaDeTarefa" />
+    <nav class="orange darken-2">
+      <div class="nav-wrapper">
+        <img alt="Vue logo" src="../assets/logo.png" width="32" />
+      </div>
+    </nav>
+    <div v-show="exibir.lista" style="padding: 20px">
+      <button class="btn" @click="mostrarCadastro">Adicionar</button>
+    </div>
+    <!-- lista -->
+    <div v-show="exibir.lista">
+      <TarefaList
+        :msg="'Lista de tarefas'"
+        :tasks="listaDeTarefa"
+        @editarClick="recebiEditar"
+      />
+    </div>
+    <!-- FORM -->
+    <div v-show="exibir.form">
+      <TarefaForm
+        :id="form.id"
+        :titulo="form.titulo"
+        :title="form.title"
+        :project="form.project"
+        :btn="form.btn"
+        @salvarClick="recebiSalvar"
+        @alterarClick="recebiAlterar"
+      ></TarefaForm>
+    </div>
   </div>
 </template>
-
 <script>
-import axios from "axios";
-import TarefaList from "../components/TarefaList.vue";
-
+import TasksApi from '../TasksApi.js'
+import TarefaList from '../components/TarefaList.vue'
+import TarefaForm from '../components/TarefaForm.vue'
 export default {
   components: {
     TarefaList,
+    TarefaForm,
   },
   data: () => {
     return {
-      listaDeTarefa: ["A", "B", "C"],
-    };
+      listaDeTarefa: [],
+      exibir: {
+        lista: true,
+        form: false,
+      },
+      form: {
+        id: 0,
+        titulo: 'Cadastrar Tarefa',
+        title: '',
+        project: '',
+        btn: 'Adicionar',
+      },
+    }
+  },
+  methods: {
+    listarTarefas() {
+      TasksApi.getTasks((data) => {
+        this.listaDeTarefa = data
+      })
+    },
+    mostrarCadastro() {
+      this.form.btn = 'Adicionar'
+      this.exibir.form = true
+      this.exibir.lista = false
+    },
+    recebiSalvar(novaTarefa) {
+      TasksApi.createTask(novaTarefa, () => {
+        this.listarTarefas()
+        this.exibir.form = false
+        this.exibir.lista = true
+      })
+    },
+    recebiAlterar(tarefa) {
+      TasksApi.updateTask(tarefa, () => {
+        this.listarTarefas()
+        this.exibir.form = false
+        this.exibir.lista = true
+      })
+    },
+    recebiEditar(tarefaId) {
+      this.form.btn = 'Alterar'
+      TasksApi.getTask(tarefaId, (task) => {
+        this.form.id = task.id
+        this.form.title = task.title
+        this.form.project = task.project
+        this.exibir.form = true
+        this.exibir.lista = false
+      })
+    },
   },
   created() {
-    console.log("terminei");
-    axios.get("http://localhost:3000/tasks/").then((response) => {
-      console.log(response.data);
-      this.listaDeTarefa = response.data;
-    });
+    this.listarTarefas()
   },
-};
-</script>
-
-<style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
 }
-</style>
+</script>
+<style></style>
